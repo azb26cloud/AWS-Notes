@@ -1,0 +1,45 @@
+Use this link for s3fs: https://www.youtube.com/watch?v=Qd85rhuFvqs
+
+1. Create an EC2 server.
+   with user data 
+   sudo apt-get update -y
+   sudo apt-get install awscli -y
+   sudo apt-get s3fs
+2. Create an IAM user with add user data to install awscli and s3fs utilities.
+3. Create an IAM policy
+4. Attach the policy to the user created in step 2
+5. login to the server via ssh terminal
+Go to your home directory and create a new directory with some files in it
+e.g mkdir /home/ubuntu/bucket; cd $HOME/bucket ;touch test1.txt test2.txt test3.txt
+6. Go to your AWS management console then S3 and create a new bucket
+e.g saranya109
+7. Go to your ssh session and configure the AWS CLI credentials using the below command
+AWS configure (Enter the credentials that were created when we created the user in step 2)
+
+8. Sync the target directory to the S3 bucket using the below CLI command:
+aws s3 sync path_on_filesystem s3://bucketname
+e.g aws s3 sync /home/ubuntu/bucket s3://saranya109
+
+9. create the credential file for s3fs
+s3fs supports the standard AWS credentials file stored in ${HOME}/.aws/credentials. Alternatively, s3fs supports a custom passwd file.
+The default location for the s3fs password file can be created:
+using a .passwd-s3fs file in the users home directory (i.e. ${HOME}/.passwd_s3fs)
+
+file should have the below content:
+$AWS_ACCESS_KEY_ID:$AWS_SECRET_KEY_ID 
+chmod 600 .passwd_s3fs
+
+10. Run the below command to mount s3 as a filesystem on your ec2 server
+sudo s3fs bucketname path  -o passwd_file=$HOME/.passwd-s3fs,nonempty,rw,allow_other,mp_umask=002,uid=$UID,gid=$UID -o url=http://s3.aws-region.amazonaws.com,endpoint=aws-region1,use_path_request_style
+
+for example:
+sudo s3fs saranya109 /home/ubuntu/bucket  -o passwd_file=$HOME/.passwd_s3fs,nonempty,rw,allow_other,mp_umask=002,uid=1000,gid=1000 -o url=http://s3.us-east-1.amazonaws.com,endpoint=us-east-1,use_path_request_style
+
+11. verify using the below command
+mount|grep s3fs
+
+12. Add the entry in fstab using the below command so that the changes become persistent after the server reboot as well:
+
+bucketname directoryonfs fuse.s3fs _netdev,allow_other 0 0
+For example:
+theofficeguy-101 /home/ubuntu/bucket fuse.s3fs _netdev,allow_other 0 0
